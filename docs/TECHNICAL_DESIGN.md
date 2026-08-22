@@ -2,7 +2,7 @@
 
 > 版本：0.1.0
 >
-> 状态：初始技术方案
+> 状态：M5 实现基线
 >
 > 产品定位：专为本地开发服务器设计的极简桌面浏览器与预览调试工作台
 
@@ -17,9 +17,9 @@
 - React + TypeScript
 - Vite
 - 系统 WebView
-- SQLite 或 JSON 文件作为本地持久化方案
+- JSON 文件作为当前本地持久化方案，保留备份恢复路径
 
-如果后续发现系统 WebView 无法满足高级调试需求，可把调试能力拆成独立模块，而不是立即更换整个技术栈。
+当前实现已完成 M1-M5。后续如果系统 WebView 无法满足高级调试需求，应先把调试能力拆成独立模块，再评估是否需要更换整个技术栈。
 
 ## 2. 产品定义
 
@@ -109,18 +109,18 @@ LocalView 不应该在第一阶段成为：
 
 ## 4. 技术选型
 
-| 层级 | 技术 | 选择理由 |
-|---|---|---|
-| 桌面容器 | Tauri 2 | 体积小、启动快、原生能力完整 |
-| 原生逻辑 | Rust | 适合进程、端口、文件和系统能力管理 |
-| UI | React + TypeScript | 组件生态成熟，适合复杂状态交互 |
-| 构建工具 | Vite | 与前端开发生态兼容，开发反馈快 |
-| 页面渲染 | 系统 WebView | 复用操作系统能力，降低安装包体积 |
-| 状态管理 | Zustand 或 React Context | MVP 阶段保持简单，避免过度架构 |
-| 本地存储 | JSON 起步，SQLite 可选 | 项目数量较少时 JSON 足够，后续可迁移 |
-| Rust 异步 | Tokio | 处理进程输出、端口轮询和任务取消 |
-| 日志 | tracing | 结构化日志、可配置级别 |
-| 测试 | Rust unit/integration + Vitest + Playwright | 覆盖核心逻辑与关键用户流程 |
+| 层级      | 技术                                        | 选择理由                             |
+| --------- | ------------------------------------------- | ------------------------------------ |
+| 桌面容器  | Tauri 2                                     | 体积小、启动快、原生能力完整         |
+| 原生逻辑  | Rust                                        | 适合进程、端口、文件和系统能力管理   |
+| UI        | React + TypeScript                          | 组件生态成熟，适合复杂状态交互       |
+| 构建工具  | Vite                                        | 与前端开发生态兼容，开发反馈快       |
+| 页面渲染  | 系统 WebView                                | 复用操作系统能力，降低安装包体积     |
+| 状态管理  | Zustand 或 React Context                    | MVP 阶段保持简单，避免过度架构       |
+| 本地存储  | JSON 起步，SQLite 可选                      | 项目数量较少时 JSON 足够，后续可迁移 |
+| Rust 异步 | Tokio                                       | 处理进程输出、端口轮询和任务取消     |
+| 日志      | tracing                                     | 结构化日志、可配置级别               |
+| 测试      | Rust unit/integration + Vitest + Playwright | 覆盖核心逻辑与关键用户流程           |
 
 ## 5. 总体架构
 
@@ -277,20 +277,20 @@ MVP 可以保存到应用数据目录下的 `projects.json`。示例：
 
 前端只通过白名单 Command 与 Rust 通信。
 
-| Command | 参数 | 返回值 | 说明 |
-|---|---|---|---|
-| `list_projects` | 无 | `Project[]` | 获取项目列表 |
-| `create_project` | `CreateProjectInput` | `Project` | 创建项目 |
-| `update_project` | `UpdateProjectInput` | `Project` | 更新配置 |
-| `delete_project` | `projectId` | `void` | 删除配置，不删除项目文件 |
-| `start_project` | `projectId` | `RuntimeService` | 启动开发服务器 |
-| `stop_project` | `projectId` | `void` | 停止由应用启动的服务 |
-| `restart_project` | `projectId` | `RuntimeService` | 重启服务 |
-| `get_runtime_status` | `projectId` | `RuntimeService` | 查询当前状态 |
-| `probe_url` | `url` | `ProbeResult` | 检测页面可访问性 |
-| `get_recent_logs` | `projectId` | `LogLine[]` | 获取缓存日志 |
-| `scan_ports` | `ScanOptions` | `PortInfo[]` | 扫描本地端口 |
-| `open_project_folder` | `projectId` | `void` | 使用系统文件管理器打开 |
+| Command               | 参数                 | 返回值           | 说明                     |
+| --------------------- | -------------------- | ---------------- | ------------------------ |
+| `list_projects`       | 无                   | `Project[]`      | 获取项目列表             |
+| `create_project`      | `CreateProjectInput` | `Project`        | 创建项目                 |
+| `update_project`      | `UpdateProjectInput` | `Project`        | 更新配置                 |
+| `delete_project`      | `projectId`          | `void`           | 删除配置，不删除项目文件 |
+| `start_project`       | `projectId`          | `RuntimeService` | 启动开发服务器           |
+| `stop_project`        | `projectId`          | `void`           | 停止由应用启动的服务     |
+| `restart_project`     | `projectId`          | `RuntimeService` | 重启服务                 |
+| `get_runtime_status`  | `projectId`          | `RuntimeService` | 查询当前状态             |
+| `probe_url`           | `url`                | `ProbeResult`    | 检测页面可访问性         |
+| `get_recent_logs`     | `projectId`          | `LogLine[]`      | 获取缓存日志             |
+| `scan_ports`          | `ScanOptions`        | `PortInfo[]`     | 扫描本地端口             |
+| `open_project_folder` | `projectId`          | `void`           | 使用系统文件管理器打开   |
 
 事件建议：
 
@@ -390,14 +390,14 @@ MVP 可以先使用“项目列表 + 预览页”两栏，服务信息和日志�
 
 建议初始快捷键：
 
-| 快捷键 | 功能 |
-|---|---|
-| `Ctrl/Cmd + P` | 搜索项目 |
-| `Ctrl/Cmd + R` | 刷新当前预览 |
-| `Ctrl/Cmd + Shift + R` | 重启当前项目 |
-| `Ctrl/Cmd + Shift + I` | 打开 DevTools |
-| `Ctrl/Cmd + L` | 聚焦 URL 或项目搜索 |
-| `Ctrl/Cmd + ,` | 打开设置 |
+| 快捷键                 | 功能                |
+| ---------------------- | ------------------- |
+| `Ctrl/Cmd + P`         | 搜索项目            |
+| `Ctrl/Cmd + R`         | 刷新当前预览        |
+| `Ctrl/Cmd + Shift + R` | 重启当前项目        |
+| `Ctrl/Cmd + Shift + I` | 打开 DevTools       |
+| `Ctrl/Cmd + L`         | 聚焦 URL 或项目搜索 |
+| `Ctrl/Cmd + ,`         | 打开设置            |
 
 快捷键必须允许用户关闭或修改，避免与系统和页面快捷键冲突。
 
