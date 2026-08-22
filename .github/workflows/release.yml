@@ -43,9 +43,11 @@ jobs:
         run: |
           tag_version="${GITHUB_REF_NAME#v}"
           package_version=$(node -p "require('./package.json').version")
+          lock_version=$(node -p "require('./package-lock.json').packages[''].version")
           cargo_version=$(sed -n 's/^version = "\(.*\)"/\1/p' src-tauri/Cargo.toml | head -n 1)
-          if [ "$tag_version" != "$package_version" ] || [ "$tag_version" != "$cargo_version" ]; then
-            echo "Tag $tag_version does not match package $package_version or Cargo $cargo_version"
+          tauri_version=$(node -p "require('./src-tauri/tauri.conf.json').version")
+          if [ "$tag_version" != "$package_version" ] || [ "$tag_version" != "$lock_version" ] || [ "$tag_version" != "$cargo_version" ] || [ "$tag_version" != "$tauri_version" ]; then
+            echo "Tag $tag_version does not match package $package_version, lockfile $lock_version, Cargo $cargo_version, or Tauri $tauri_version"
             exit 1
           fi
       - name: Build release bundle
@@ -75,7 +77,28 @@ jobs:
           test -n "$(find dist-release -type f -print -quit)"
       - name: Generate SHA-256 checksums
         shell: bash
-        run: sha256sum dist-release/* > dist-release/SHA256SUMS.txt
+        run: |
+          sha256sum dist-release/* > dist-release/SHA256SUMS.txt
+          node <<'NODE'
+          const fs = require('node:fs');
+          const crypto = require('node:crypto');
+          const path = require('node:path');
+          const directory = 'dist-release';
+          const files = fs.readdirSync(directory).filter((file) => file !== 'release-manifest.json');
+          const artifacts = Object.fromEntries(files.map((file) => [
+            file,
+            crypto.createHash('sha256').update(fs.readFileSync(path.join(directory, file))).digest('hex'),
+          ]));
+          const manifest = {
+            product: 'LocalView',
+            version: process.env.GITHUB_REF_NAME.replace(/^v/, ''),
+            commit: process.env.GITHUB_SHA,
+            workflow: process.env.GITHUB_WORKFLOW,
+            runId: process.env.GITHUB_RUN_ID,
+            artifacts,
+          };
+          fs.writeFileSync(path.join(directory, 'release-manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
+          NODE
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:

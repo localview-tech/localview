@@ -1,6 +1,6 @@
 # Known issues
 
-This document records limitations relevant to M7 release users.
+This document records limitations relevant to M7/M8 release users.
 
 ## Platform validation
 
@@ -23,3 +23,4 @@ Windows WebView2, NSIS packaging, and the core process lifecycle are validated i
 - Release artifacts are not considered signed until platform signing secrets and native signing steps are configured.
 - Automatic in-app updates are not enabled. Users should install a verified release artifact manually until the updater has signed metadata, rollback behavior, and service-shutdown handling.
 - WiX MSI packaging may fail in environments with an incompatible WiX toolchain; the supported Windows release artifact is currently NSIS.
+- `release-manifest.json` records build provenance and checksums but is not a cryptographic publisher signature.

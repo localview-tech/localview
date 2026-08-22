@@ -12,7 +12,7 @@ Local development often means repeating the same loop: open a terminal, remember
 
 ## Current status
 
-M6 is complete and the project is in Beta preparation. The current release includes:
+M8 is complete and `v0.1.0` is the first formal release. The current release includes:
 
 - Project configuration stored locally as JSON with backup recovery.
 - Project list, search, create, edit, delete, and directory selection.
@@ -30,7 +30,7 @@ M6 is complete and the project is in Beta preparation. The current release inclu
 
 See the [M6 evaluation](docs/M6_EVALUATION.md) for the implementation boundary and verification record.
 
-Release engineering is ready for M7: see the [release guide](docs/RELEASE.md) and [known issues](docs/KNOWN_ISSUES.md) before creating a tag.
+Release engineering is ready for M7/M8: see the [release guide](docs/RELEASE.md), [M8 evaluation](docs/M8_EVALUATION.md), and [known issues](docs/KNOWN_ISSUES.md) before creating a tag.
 
 ## Requirements
 
@@ -115,6 +115,7 @@ The frontend owns presentation and interaction. Rust owns filesystem access, pro
 - [M5 evaluation](docs/M5_EVALUATION.md)
 - [M6 evaluation](docs/M6_EVALUATION.md)
 - [M7 evaluation](docs/M7_EVALUATION.md)
+- [M8 evaluation](docs/M8_EVALUATION.md)
 - [Release guide](docs/RELEASE.md)
 - [Known issues](docs/KNOWN_ISSUES.md)
 - [Contributing](CONTRIBUTING.md)
@@ -142,7 +143,7 @@ Unless you explicitly state otherwise, contributions submitted to this project a
 
 LocalView 是一个面向 localhost 开发服务器的极简桌面浏览器和预览调试工作台，基于 Tauri 2、Rust、React、TypeScript 和 Vite 构建。
 
-当前 M6 已完成：项目配置管理、本地服务启动与停止、进程树清理、端口就绪探测、实时日志、日志脱敏、内嵌页面预览、配置异常恢复、CSP 安全策略、端口发现、项目识别建议、多服务模型和响应式预览。
+当前 M8 已完成，`v0.1.0` 为首个正式版本：包含项目配置管理、本地服务启动与停止、进程树清理、端口就绪探测、实时日志、日志脱敏、内嵌页面预览、配置异常恢复、CSP 安全策略、端口发现、项目识别建议、多服务模型、响应式预览，以及可追溯的跨平台发布流程。
 
 开发环境要求 Node.js 20+、npm、Rust stable 和 Tauri 2 所需的系统 WebView：
 
