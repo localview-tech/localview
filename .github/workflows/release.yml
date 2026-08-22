@@ -1,0 +1,83 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            bundle: nsis
+          - os: macos-latest
+            bundle: dmg
+          - os: ubuntu-22.04
+            bundle: deb
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
+      - name: Install dependencies
+        run: npm ci
+      - name: Verify tag version
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        run: |
+          tag_version="${GITHUB_REF_NAME#v}"
+          package_version=$(node -p "require('./package.json').version")
+          cargo_version=$(sed -n 's/^version = "\(.*\)"/\1/p' src-tauri/Cargo.toml | head -n 1)
+          if [ "$tag_version" != "$package_version" ] || [ "$tag_version" != "$cargo_version" ]; then
+            echo "Tag $tag_version does not match package $package_version or Cargo $cargo_version"
+            exit 1
+          fi
+      - name: Build release bundle
+        run: npm run tauri:build -- --bundles ${{ matrix.bundle }}
+      - name: Upload bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: localview-${{ matrix.os }}
+          path: src-tauri/target/release/bundle
+
+  publish:
+    name: Publish GitHub release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Download bundles
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+      - name: Flatten release assets
+        shell: bash
+        run: |
+          mkdir -p dist-release
+          find release-assets -type f \( -name '*.exe' -o -name '*.dmg' -o -name '*.deb' \) -exec cp {} dist-release/ \;
+          test -n "$(find dist-release -type f -print -quit)"
+      - name: Generate SHA-256 checksums
+        shell: bash
+        run: sha256sum dist-release/* > dist-release/SHA256SUMS.txt
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: dist-release/*

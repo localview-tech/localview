@@ -30,6 +30,8 @@
     "targets": "all",
     "icon": ["icons/icon.ico", "icons/icon.png", "icons/icon.icns"],
     "category": "DeveloperTool",
+    "publisher": "LocalView Contributors",
+    "copyright": "Copyright © 2026 LocalView Contributors",
     "shortDescription": "A focused browser for localhost development servers",
     "longDescription": "LocalView helps developers launch, preview, and debug local development servers."
   }

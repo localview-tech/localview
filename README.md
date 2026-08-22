@@ -30,6 +30,8 @@ M6 is complete and the project is in Beta preparation. The current release inclu
 
 See the [M6 evaluation](docs/M6_EVALUATION.md) for the implementation boundary and verification record.
 
+Release engineering is ready for M7: see the [release guide](docs/RELEASE.md) and [known issues](docs/KNOWN_ISSUES.md) before creating a tag.
+
 ## Requirements
 
 ### All platforms
@@ -112,6 +114,9 @@ The frontend owns presentation and interaction. Rust owns filesystem access, pro
 - [M4 evaluation](docs/M4_EVALUATION.md)
 - [M5 evaluation](docs/M5_EVALUATION.md)
 - [M6 evaluation](docs/M6_EVALUATION.md)
+- [M7 evaluation](docs/M7_EVALUATION.md)
+- [Release guide](docs/RELEASE.md)
+- [Known issues](docs/KNOWN_ISSUES.md)
 - [Contributing](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)
 - [Changelog](CHANGELOG.md)
