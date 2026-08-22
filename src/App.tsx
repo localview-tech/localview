@@ -14,12 +14,14 @@ import {
   getAppInfo,
   getRecentLogs,
   getRuntimeStatus,
+  detectProject,
   listProjects,
   markProjectOpened,
   pickDirectory,
   restartProject,
   startProject,
   stopProject,
+  scanLocalPorts,
   updateProject,
 } from "./lib/tauri";
 import { TranslationKey, useI18n } from "./i18n";
@@ -29,6 +31,8 @@ import type {
   PackageManager,
   Project,
   ProjectInput,
+  ProjectDetection,
+  PortCandidate,
   RuntimeService,
   RuntimeStatus,
 } from "./types";
@@ -43,6 +47,7 @@ const emptyForm: ProjectInput = {
   url: "http://localhost:5173",
   port: 5173,
   autoStart: false,
+  services: [],
 };
 const packageKeys: Record<
   PackageManager,
@@ -88,6 +93,7 @@ function projectToForm(project: Project): ProjectInput {
     url: project.url,
     port: project.port,
     autoStart: project.autoStart,
+    services: project.services,
   };
 }
 
@@ -116,6 +122,8 @@ function errorMessage(
       PROCESS_STOP_FAILED: "errors.PROCESS_STOP_FAILED",
       SERVICE_RUNNING: "errors.SERVICE_RUNNING",
       INVALID_PREVIEW_URL: "errors.INVALID_PREVIEW_URL",
+      PORT_SCAN_RANGE_INVALID: "errors.PORT_SCAN_RANGE_INVALID",
+      DETECTION_FAILED: "errors.DETECTION_FAILED",
     } as Partial<Record<string, TranslationKey>>
   )[raw];
   return key ? translate(key) : translate("errors.generic", { message: raw });
@@ -141,6 +149,13 @@ function App() {
   const [previewHistory, setPreviewHistory] = useState<string[]>([]);
   const [previewHistoryIndex, setPreviewHistoryIndex] = useState(0);
   const [previewNonce, setPreviewNonce] = useState(0);
+  const [viewport, setViewport] = useState<"responsive" | "desktop" | "tablet" | "mobile">(
+    "responsive",
+  );
+  const [portCandidates, setPortCandidates] = useState<PortCandidate[]>([]);
+  const [scanningPorts, setScanningPorts] = useState(false);
+  const [detection, setDetection] = useState<ProjectDetection | null>(null);
+  const [detectingProject, setDetectingProject] = useState(false);
 
   const selectedProject = projects.find((project) => project.id === selectedId) ?? null;
   const selectedProjectUrl = selectedProject?.url;
@@ -241,10 +256,56 @@ function App() {
   async function handlePickDirectory() {
     try {
       const path = await pickDirectory();
-      if (path) setForm((current) => ({ ...current, rootPath: path, workingDirectory: path }));
+      if (path) {
+        setForm((current) => ({ ...current, rootPath: path, workingDirectory: path }));
+        void handleDetectProject(path);
+      }
     } catch (reason: unknown) {
       setError(errorMessage(reason, t));
     }
+  }
+
+  async function handleDetectProject(rootPath = form.rootPath) {
+    if (!rootPath) return;
+    setDetectingProject(true);
+    try {
+      const result = await detectProject(rootPath);
+      setDetection(result);
+      setForm((current) => ({
+        ...current,
+        name: current.name || result.name || "",
+        packageManager: (result.packageManager as PackageManager | null) ?? current.packageManager,
+        port: current.port ?? result.suggestedPort,
+        url:
+          current.port || !result.suggestedPort
+            ? current.url
+            : `http://localhost:${result.suggestedPort}`,
+        startCommand:
+          current.startCommand === emptyForm.startCommand && result.scripts[0]
+            ? `${result.packageManager ?? "npm"} run ${result.scripts[0].name}`
+            : current.startCommand,
+      }));
+    } catch {
+      setError(errorMessage("DETECTION_FAILED", t));
+    } finally {
+      setDetectingProject(false);
+    }
+  }
+
+  async function handleScanPorts() {
+    setScanningPorts(true);
+    try {
+      setPortCandidates(await scanLocalPorts());
+    } catch (reason: unknown) {
+      setError(errorMessage(reason, t));
+    } finally {
+      setScanningPorts(false);
+    }
+  }
+
+  function applyPortCandidate(candidate: PortCandidate) {
+    navigatePreview(candidate.url);
+    setError(null);
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -524,6 +585,25 @@ function App() {
                   >
                     ↻
                   </button>
+                  <div className="viewport-switcher" aria-label={t("preview.viewport")}>
+                    {(["responsive", "desktop", "tablet", "mobile"] as const).map((option) => (
+                      <button
+                        className={viewport === option ? "active" : ""}
+                        key={option}
+                        type="button"
+                        onClick={() => setViewport(option)}
+                        title={t(`preview.${option}` as TranslationKey)}
+                      >
+                        {option === "responsive"
+                          ? "↔"
+                          : option === "desktop"
+                            ? "▣"
+                            : option === "tablet"
+                              ? "▤"
+                              : "▥"}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
               <form className="preview-address" onSubmit={handlePreviewSubmit}>
@@ -545,7 +625,7 @@ function App() {
                   <>
                     <iframe
                       key={`${previewUrl}-${previewNonce}`}
-                      className="preview-frame"
+                      className={`preview-frame viewport-${viewport}`}
                       title={`${selectedProject.name} preview`}
                       src={previewUrl}
                       onLoad={() => setPreviewPhase("loaded")}
@@ -617,6 +697,80 @@ function App() {
                 <span className="detail-caption">
                   {runtime?.pid ? `${t("service.pid")} ${runtime.pid}` : t("service.waitingPort")}
                 </span>
+              </div>
+            </section>
+            <section className="tools-grid">
+              <div className="tool-card">
+                <div className="tool-card-heading">
+                  <div>
+                    <p className="eyebrow">{t("discovery.label")}</p>
+                    <h3>{t("discovery.scan")}</h3>
+                  </div>
+                  <button
+                    className="button quiet"
+                    type="button"
+                    disabled={scanningPorts}
+                    onClick={() => void handleScanPorts()}
+                  >
+                    {scanningPorts ? t("discovery.scanning") : t("discovery.scan")}
+                  </button>
+                </div>
+                {portCandidates.length ? (
+                  <div className="candidate-list">
+                    {portCandidates.map((candidate) => (
+                      <div className="candidate-row" key={candidate.port}>
+                        <div>
+                          <strong>{candidate.url}</strong>
+                          <span>{candidate.server ?? (candidate.hmr ? "HMR" : "localhost")}</span>
+                        </div>
+                        <button
+                          className="text-button"
+                          type="button"
+                          onClick={() => applyPortCandidate(candidate)}
+                        >
+                          {t("discovery.use")}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="muted">{t("discovery.empty")}</p>
+                )}
+              </div>
+              <div className="tool-card">
+                <div className="tool-card-heading">
+                  <div>
+                    <p className="eyebrow">{t("detection.label")}</p>
+                    <h3>{detection?.framework ?? t("detection.none")}</h3>
+                  </div>
+                  <button
+                    className="button quiet"
+                    type="button"
+                    disabled={detectingProject || !selectedProject.rootPath}
+                    onClick={() => void handleDetectProject(selectedProject.rootPath)}
+                  >
+                    {detectingProject ? t("detection.detecting") : t("detection.detect")}
+                  </button>
+                </div>
+                {detection ? (
+                  <div className="detection-meta">
+                    <span>
+                      {t("workspace.services")}: {selectedProject.services.length}
+                    </span>
+                    <span>
+                      {t("detection.manager")}: {detection.packageManager ?? "—"}
+                    </span>
+                    <span>
+                      {t("detection.framework")}: {detection.framework ?? "—"}
+                    </span>
+                    <span>
+                      {t("detection.scripts")}:{" "}
+                      {detection.scripts.map((script) => script.name).join(", ") || "—"}
+                    </span>
+                  </div>
+                ) : (
+                  <p className="muted">{t("detection.none")}</p>
+                )}
               </div>
             </section>
             <section className={`logs-card ${logsOpen ? "open" : ""}`}>

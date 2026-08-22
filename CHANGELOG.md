@@ -5,7 +5,7 @@ All notable changes to LocalView will be documented here. The project currently 
 ## [Unreleased]
 
 - Continue native macOS and Linux validation before Beta.
-- Prepare M6 work for local port discovery, project recognition, and multi-service workspaces.
+- Prepare M7 release packaging, signing, and upgrade validation.
 
 ## [0.1.0] - 2026-08-21
 
@@ -16,6 +16,7 @@ All notable changes to LocalView will be documented here. The project currently 
 - M3 process lifecycle management, readiness probing, live logs, and process-tree cleanup.
 - M4 embedded localhost preview, address navigation, history controls, refresh, and external-browser handoff.
 - M5 configuration recovery, log redaction, restrictive CSP, custom-command confirmation, and platform build CI.
+- M6 bounded localhost port discovery, project detection suggestions, multi-service configuration, and responsive preview presets.
 
 ### Security
 

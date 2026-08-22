@@ -1,4 +1,4 @@
-use crate::models::{Project, ProjectConfig, ProjectInput};
+use crate::models::{Project, ProjectConfig, ProjectInput, ServiceDefinition};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -67,6 +67,7 @@ impl ProjectStore {
     pub fn create(&self, input: ProjectInput) -> Result<Project, StoreError> {
         validate_input(&input)?;
         let now = timestamp();
+        let services = services_for_input(&input);
         let project = Project {
             id: format!("project_{}", Uuid::new_v4().simple()),
             name: input.name.trim().to_string(),
@@ -80,6 +81,7 @@ impl ProjectStore {
             created_at: now.clone(),
             updated_at: now,
             last_opened_at: None,
+            services,
         };
         let mut config = self.load()?;
         config.projects.push(project.clone());
@@ -103,6 +105,11 @@ impl ProjectStore {
         project.url = input.url.trim().to_string();
         project.port = input.port;
         project.auto_start = input.auto_start;
+        project.services = if input.services.is_empty() {
+            services_for_project(project)
+        } else {
+            input.services.clone()
+        };
         project.updated_at = timestamp();
         let result = project.clone();
         self.save(&config)?;
@@ -219,6 +226,36 @@ fn normalize_path(path: &str) -> String {
     Path::new(path).to_string_lossy().to_string()
 }
 
+fn services_for_input(input: &ProjectInput) -> Vec<ServiceDefinition> {
+    if !input.services.is_empty() {
+        return input.services.clone();
+    }
+    vec![ServiceDefinition {
+        id: "service_main".into(),
+        name: "Main service".into(),
+        start_command: input.start_command.trim().into(),
+        working_directory: input.working_directory.clone(),
+        url: input.url.trim().into(),
+        port: input.port,
+        package_manager: input.package_manager.clone(),
+    }]
+}
+
+fn services_for_project(project: &Project) -> Vec<ServiceDefinition> {
+    if !project.services.is_empty() {
+        return project.services.clone();
+    }
+    vec![ServiceDefinition {
+        id: "service_main".into(),
+        name: "Main service".into(),
+        start_command: project.start_command.clone(),
+        working_directory: project.working_directory.clone(),
+        url: project.url.clone(),
+        port: project.port,
+        package_manager: project.package_manager.clone(),
+    }]
+}
+
 fn timestamp() -> String {
     let duration = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -241,6 +278,7 @@ mod tests {
             url: "http://localhost:5173".into(),
             port: Some(5173),
             auto_start: false,
+            services: Vec::new(),
         }
     }
 

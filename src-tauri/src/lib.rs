@@ -1,8 +1,12 @@
 mod models;
+mod port_scanner;
 mod process_manager;
+mod project_detector;
 mod project_store;
 
-use models::{AppInfo, LogLine, Project, ProjectInput, RuntimeService};
+use models::{
+    AppInfo, LogLine, PortCandidate, Project, ProjectDetection, ProjectInput, RuntimeService,
+};
 use process_manager::ProcessManager;
 use project_store::ProjectStore;
 use std::sync::Mutex;
@@ -158,6 +162,20 @@ async fn get_recent_logs(
     Ok(state.process_manager.logs(&project_id).await)
 }
 
+#[tauri::command]
+async fn scan_local_ports(
+    start_port: Option<u16>,
+    end_port: Option<u16>,
+    timeout_ms: Option<u64>,
+) -> Result<Vec<PortCandidate>, String> {
+    port_scanner::scan_local_ports(start_port, end_port, timeout_ms).await
+}
+
+#[tauri::command]
+fn detect_project(root_path: String) -> Result<ProjectDetection, String> {
+    project_detector::detect_project(&root_path)
+}
+
 fn build_state(app: &AppHandle) -> Result<AppState, String> {
     let app_data_dir = app
         .path()
@@ -191,7 +209,9 @@ pub fn run() {
             restart_project,
             get_runtime_status,
             list_runtime_statuses,
-            get_recent_logs
+            get_recent_logs,
+            scan_local_ports,
+            detect_project
         ])
         .build(tauri::generate_context!())
         .expect("error while building LocalView");

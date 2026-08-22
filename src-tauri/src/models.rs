@@ -15,6 +15,8 @@ pub struct Project {
     pub created_at: String,
     pub updated_at: String,
     pub last_opened_at: Option<String>,
+    #[serde(default)]
+    pub services: Vec<ServiceDefinition>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -28,6 +30,49 @@ pub struct ProjectInput {
     pub url: String,
     pub port: Option<u16>,
     pub auto_start: bool,
+    #[serde(default)]
+    pub services: Vec<ServiceDefinition>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct ServiceDefinition {
+    pub id: String,
+    pub name: String,
+    pub start_command: String,
+    pub working_directory: Option<String>,
+    pub url: String,
+    pub port: Option<u16>,
+    pub package_manager: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PortCandidate {
+    pub port: u16,
+    pub url: String,
+    pub title: Option<String>,
+    pub server: Option<String>,
+    pub hmr: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScriptSuggestion {
+    pub name: String,
+    pub command: String,
+    pub recommended: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectDetection {
+    pub root_path: String,
+    pub name: Option<String>,
+    pub package_manager: Option<String>,
+    pub framework: Option<String>,
+    pub suggested_port: Option<u16>,
+    pub scripts: Vec<ScriptSuggestion>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]

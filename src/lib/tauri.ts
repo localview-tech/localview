@@ -1,6 +1,14 @@
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
-import type { AppInfo, LogLine, Project, ProjectInput, RuntimeService } from "../types";
+import type {
+  AppInfo,
+  LogLine,
+  PortCandidate,
+  Project,
+  ProjectDetection,
+  ProjectInput,
+  RuntimeService,
+} from "../types";
 
 export function getAppInfo(): Promise<AppInfo> {
   return invoke<AppInfo>("get_app_info");
@@ -44,6 +52,18 @@ export function getRuntimeStatus(projectId: string): Promise<RuntimeService> {
 
 export function getRecentLogs(projectId: string): Promise<LogLine[]> {
   return invoke<LogLine[]>("get_recent_logs", { projectId });
+}
+
+export function scanLocalPorts(
+  startPort = 3000,
+  endPort = 3099,
+  timeoutMs = 180,
+): Promise<PortCandidate[]> {
+  return invoke<PortCandidate[]>("scan_local_ports", { startPort, endPort, timeoutMs });
+}
+
+export function detectProject(rootPath: string): Promise<ProjectDetection> {
+  return invoke<ProjectDetection>("detect_project", { rootPath });
 }
 
 export async function pickDirectory(): Promise<string | null> {

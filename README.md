@@ -12,7 +12,7 @@ Local development often means repeating the same loop: open a terminal, remember
 
 ## Current status
 
-M5 is complete and the project is in pre-Beta hardening. The current release includes:
+M6 is complete and the project is in Beta preparation. The current release includes:
 
 - Project configuration stored locally as JSON with backup recovery.
 - Project list, search, create, edit, delete, and directory selection.
@@ -23,8 +23,12 @@ M5 is complete and the project is in pre-Beta hardening. The current release inc
 - English and Simplified Chinese UI translations.
 - Minimal Tauri capabilities, localhost-only preview validation, and a restrictive CSP.
 - GitHub Actions checks plus Windows, macOS, and Ubuntu desktop build jobs.
+- Bounded localhost port discovery with HTTP metadata hints.
+- Non-destructive project detection for package scripts, lockfiles, and common frameworks.
+- A backward-compatible multi-service project model.
+- Responsive preview presets for desktop, tablet, mobile, and adaptive layouts.
 
-See the [M5 evaluation](docs/M5_EVALUATION.md) for the implementation boundary and verification record.
+See the [M6 evaluation](docs/M6_EVALUATION.md) for the implementation boundary and verification record.
 
 ## Requirements
 
@@ -107,6 +111,7 @@ The frontend owns presentation and interaction. Rust owns filesystem access, pro
 - [M3 evaluation](docs/M3_EVALUATION.md)
 - [M4 evaluation](docs/M4_EVALUATION.md)
 - [M5 evaluation](docs/M5_EVALUATION.md)
+- [M6 evaluation](docs/M6_EVALUATION.md)
 - [Contributing](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)
 - [Changelog](CHANGELOG.md)
@@ -132,7 +137,7 @@ Unless you explicitly state otherwise, contributions submitted to this project a
 
 LocalView 是一个面向 localhost 开发服务器的极简桌面浏览器和预览调试工作台，基于 Tauri 2、Rust、React、TypeScript 和 Vite 构建。
 
-当前 M5 已完成：项目配置管理、本地服务启动与停止、进程树清理、端口就绪探测、实时日志、日志脱敏、内嵌页面预览、配置异常恢复、CSP 安全策略和跨平台 CI 构建矩阵。
+当前 M6 已完成：项目配置管理、本地服务启动与停止、进程树清理、端口就绪探测、实时日志、日志脱敏、内嵌页面预览、配置异常恢复、CSP 安全策略、端口发现、项目识别建议、多服务模型和响应式预览。
 
 开发环境要求 Node.js 20+、npm、Rust stable 和 Tauri 2 所需的系统 WebView：
 
